@@ -8,22 +8,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <!-- Service Worker: SharedArrayBuffer 활성화 (COOP/COEP 헤더 주입) -->
-  <!-- GitHub Pages는 서버 헤더 설정이 불가하므로 SW로 처리합니다 -->
+  <!-- Service Worker: SharedArrayBuffer 활성화 (GitHub Pages용) -->
+  <!-- crossOriginIsolated가 아닐 때만 SW를 등록하고 리로드합니다 -->
   <script>
     (function () {
+      if (self.crossOriginIsolated) return; // 이미 격리됨 → 아무것도 안 해도 됨
       if (!('serviceWorker' in navigator)) return;
 
-      // SW가 이미 이 페이지를 제어하고 있으면 정상 상태 → 아무것도 안 함
-      if (navigator.serviceWorker.controller) return;
-
-      // SW가 없으면 등록 후, controllerchange 이벤트로 리로드
+      // SW가 컨트롤러가 되면 페이지를 리로드 → COOP/COEP 헤더 적용
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
       });
 
-      navigator.serviceWorker
-        .register('./coi-serviceworker.js')
+      navigator.serviceWorker.register('./coi-serviceworker.js')
         .catch(e => console.warn('Service Worker 등록 실패:', e));
     })();
   </script>
@@ -33,7 +30,6 @@
 
     :root {
       --bg: #07070f;
-      --bg2: #10101e;
       --card: rgba(255,255,255,0.04);
       --card-h: rgba(255,255,255,0.07);
       --border: rgba(255,255,255,0.09);
@@ -41,7 +37,9 @@
       --accent2: #f06292;
       --green: #3dd68c;
       --yellow: #f5c842;
+      --orange: #f39c12;
       --red: #f4534e;
+      --blue: #4285f4;
       --txt: #f0f0ff;
       --txt2: #9090aa;
       --txt3: #555568;
@@ -64,17 +62,14 @@
     .hdr-icon {
       width: 76px; height: 76px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 22px;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 38px;
+      border-radius: 22px; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; font-size: 38px;
       box-shadow: 0 16px 55px rgba(124,111,247,0.45);
       animation: floatY 3.5s ease-in-out infinite;
     }
     @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
     .hdr h1 {
-      font-size: clamp(1.6rem, 5vw, 2.2rem);
-      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 900;
       background: linear-gradient(135deg, #fff 30%, #b0aaff);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       margin-bottom: 8px;
@@ -99,11 +94,16 @@
       display: flex; align-items: center; gap: 8px;
     }
 
-    /* ── COMPAT WARNING ── */
+    /* ── COMPAT / INAPP ALERTS ── */
     .compat-alert {
       padding: 14px 18px; border-radius: 14px; font-size: 0.85rem;
       background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.3);
       color: var(--yellow); line-height: 1.6;
+    }
+    .inapp-notice {
+      padding: 20px 18px; border-radius: 14px; font-size: 0.88rem; line-height: 1.7;
+      background: rgba(244,83,78,0.1); border: 1px solid rgba(244,83,78,0.28);
+      color: #ff9090;
     }
     .open-chrome-btn {
       display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -115,17 +115,12 @@
       transition: all 0.2s ease;
     }
     .open-chrome-btn:active { transform: scale(0.97); }
-    .inapp-notice {
-      padding: 20px 18px; border-radius: 14px; font-size: 0.88rem; line-height: 1.7;
-      background: rgba(244,83,78,0.1); border: 1px solid rgba(244,83,78,0.28);
-      color: #ff9090;
-    }
 
     /* ── UPLOAD ZONE ── */
     .drop-zone {
       border: 2px dashed var(--border); border-radius: 18px;
       padding: 50px 24px; text-align: center; cursor: pointer;
-      transition: all 0.3s ease; position: relative;
+      transition: all 0.3s ease;
     }
     .drop-zone:hover, .drop-zone.drag-over {
       border-color: var(--accent); background: rgba(124,111,247,0.07);
@@ -161,7 +156,7 @@
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       padding: 12px 24px; border-radius: 13px;
       font-family: 'Noto Sans KR', sans-serif; font-size: 0.93rem; font-weight: 700;
-      cursor: pointer; border: none; transition: all 0.2s ease; text-decoration: none;
+      cursor: pointer; border: none; transition: all 0.2s ease;
       letter-spacing: -0.01em;
     }
     .btn-primary {
@@ -170,10 +165,7 @@
     }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(124,111,247,0.55); }
     .btn-primary:active { transform: translateY(0); }
-    .btn-secondary {
-      background: var(--card); border: 1px solid var(--border);
-      color: var(--txt);
-    }
+    .btn-secondary { background: var(--card); border: 1px solid var(--border); color: var(--txt); }
     .btn-secondary:hover { background: var(--card-h); border-color: var(--accent); }
     .btn-green {
       background: linear-gradient(135deg, var(--green), #2ae8aa);
@@ -184,36 +176,38 @@
     .btn-danger:hover { background: rgba(244,83,78,0.24); }
     .btn-full { width: 100%; padding: 16px 24px; font-size: 1.05rem; border-radius: 15px; }
 
-    /* ── TABS ── */
-    .tabs {
-      display: flex; gap: 4px;
-      background: rgba(0,0,0,0.35); border-radius: 13px; padding: 4px; margin-bottom: 20px;
-    }
-    .tab {
-      flex: 1; padding: 10px 8px; border: none; border-radius: 10px;
-      background: transparent; color: var(--txt2);
-      font-family: 'Noto Sans KR', sans-serif; font-size: 0.88rem; font-weight: 600;
-      cursor: pointer; transition: all 0.2s ease;
-    }
-    .tab.on { background: var(--accent); color: #fff; }
-
-    /* ── PRESET GRID ── */
-    .preset-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-    .preset-btn {
-      padding: 18px 10px; border-radius: 15px;
+    /* ── SPEED / PRESET GRID ── */
+    .speed-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .speed-btn {
+      padding: 16px 8px; border-radius: 15px;
       border: 2px solid var(--border); background: var(--card);
       cursor: pointer; text-align: center; transition: all 0.2s ease;
       font-family: 'Noto Sans KR', sans-serif; color: var(--txt);
     }
-    .preset-btn:hover { border-color: var(--accent); background: rgba(124,111,247,0.1); }
-    .preset-btn.on { border-color: var(--accent); background: rgba(124,111,247,0.18); }
-    .pi { font-size: 2rem; display: block; margin-bottom: 7px; }
-    .pn { font-size: 0.88rem; font-weight: 700; display: block; }
-    .pd { font-size: 0.73rem; color: var(--txt2); margin-top: 3px; display: block; line-height: 1.4; }
+    .speed-btn:hover { border-color: var(--accent); background: rgba(124,111,247,0.1); }
+    .speed-btn.on-ultra { border-color: var(--green); background: rgba(61,214,140,0.12); }
+    .speed-btn.on-fast  { border-color: var(--accent); background: rgba(124,111,247,0.18); }
+    .speed-btn.on-med   { border-color: var(--yellow); background: rgba(245,200,66,0.1); }
+    .si { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+    .sn { font-size: 0.88rem; font-weight: 700; display: block; }
+    .sd { font-size: 0.71rem; color: var(--txt2); margin-top: 3px; display: block; line-height: 1.4; }
+
+    /* ── RESOLUTION GRID (5-column) ── */
+    .res5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; }
+    .res-btn {
+      padding: 10px 4px; border-radius: 11px;
+      border: 1px solid var(--border); background: transparent;
+      cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+      color: var(--txt2); text-align: center; font-size: 0.82rem;
+      transition: all 0.2s ease;
+    }
+    .res-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,0.1); }
+    .res-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,0.18); }
+    .res-badge { font-size: 0.68rem; color: var(--txt3); display: block; margin-top: 2px; }
 
     /* ── TARGET SIZE ── */
     .size-row {
-      display: flex; align-items: center; gap: 0;
+      display: flex; align-items: center;
       background: rgba(0,0,0,0.3); border: 1px solid var(--border);
       border-radius: 15px; overflow: hidden; margin-bottom: 12px;
     }
@@ -226,34 +220,30 @@
     .size-row input::placeholder { color: var(--txt3); }
     .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
     .chip {
-      padding: 6px 15px; border-radius: 100px;
+      padding: 6px 14px; border-radius: 100px;
       border: 1px solid var(--border); background: transparent;
       color: var(--txt2); font-family: 'Noto Sans KR', sans-serif;
       font-size: 0.78rem; cursor: pointer; transition: all 0.2s ease;
     }
     .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* ── RESOLUTION GRID ── */
-    .res-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
-    .res-btn {
-      padding: 11px 8px; border-radius: 11px;
-      border: 1px solid var(--border); background: transparent;
-      cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
-      color: var(--txt2); text-align: center; font-size: 0.84rem;
-      transition: all 0.2s ease;
-    }
-    .res-btn:hover, .res-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,0.12); }
+    /* ── QUALITY PREVIEW GRID ── */
+    .qprev4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+    .qitem { background: rgba(0,0,0,0.22); border-radius: 13px; padding: 14px; }
+    .qlabel { font-size: 0.71rem; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 6px; }
+    .qval { font-size: 1.2rem; font-weight: 900; }
+    .qsub { font-size: 0.75rem; margin-top: 3px; }
 
-    /* ── QUALITY PREVIEW ── */
-    .qprev { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
-    .qitem { background: rgba(0,0,0,0.22); border-radius: 13px; padding: 15px; }
-    .qlabel { font-size: 0.73rem; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 6px; }
-    .qval { font-size: 1.25rem; font-weight: 900; }
-    .qsub { font-size: 0.77rem; margin-top: 3px; }
-    .qbar-wrap { margin-top: 14px; }
-    .qbar-head { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--txt2); margin-bottom: 7px; }
-    .qbar { height: 8px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
-    .qbar-fill { height: 100%; border-radius: 100px; transition: width 0.5s ease, background 0.5s ease; }
+    /* ── SPEED-QUALITY BAR ── */
+    .sq-bar-wrap { margin-top: 16px; }
+    .sq-labels { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--txt2); margin-bottom: 8px; }
+    .sq-track {
+      height: 10px; position: relative;
+      background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden;
+    }
+    .sq-fill-q { position: absolute; left: 0; top: 0; height: 100%; border-radius: 100px; transition: width 0.5s ease; }
+    .sq-fill-s { position: absolute; right: 0; top: 0; height: 100%; border-radius: 100px; transition: width 0.5s ease; }
+    .sq-sublabels { display: flex; justify-content: space-between; font-size: 0.73rem; margin-top: 6px; }
 
     /* ── DIVIDER ── */
     .divider { height: 1px; background: var(--border); margin: 18px 0; }
@@ -276,17 +266,19 @@
     }
     .prog-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 2rem; font-weight: 900; }
     .prog-step { color: var(--txt2); font-size: 0.9rem; margin-bottom: 22px; min-height: 1.4em; }
-    .prog-log { 
+    .prog-log {
       background: rgba(0,0,0,0.35); border-radius: 12px; padding: 12px 16px;
       font-size: 0.75rem; color: var(--txt3); font-family: monospace;
       max-height: 80px; overflow-y: auto; text-align: left; margin-bottom: 20px;
     }
+    .prog-log::-webkit-scrollbar { width: 4px; }
+    .prog-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     /* ── RESULT ── */
     .result-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-bottom: 14px; }
     .rc-item { background: rgba(0,0,0,0.22); border-radius: 15px; padding: 16px; text-align: center; }
     .rc-label { font-size: 0.73rem; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 7px; }
-    .rc-val { font-size: 1.45rem; font-weight: 900; }
+    .rc-val { font-size: 1.4rem; font-weight: 900; }
     .rc-sub { font-size: 0.78rem; color: var(--txt2); margin-top: 3px; }
     .rc-arrow { font-size: 1.6rem; color: var(--txt3); }
     .savings-box {
@@ -304,23 +296,41 @@
     .mt-12 { margin-top: 12px; }
     .mt-16 { margin-top: 16px; }
     .flex { display: flex; }
-    .gap-8 { gap: 8px; }
     .gap-10 { gap: 10px; }
     .sec-label { font-size: 0.8rem; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
 
+    /* ── RESOLUTION SIZE BADGE ── */
+    .res-size {
+      font-size: 0.67rem; font-weight: 700; color: var(--green);
+      display: block; margin-top: 3px;
+      transition: all 0.3s ease;
+    }
+    .res-size.warn { color: var(--yellow); }
+    .res-size.na   { color: var(--txt3); }
+
+    /* ── ADVANCED TOGGLE ── */
+    .adv-toggle {
+      width: 100%; padding: 11px 16px; border-radius: 12px;
+      border: 1px dashed var(--border); background: transparent;
+      color: var(--txt2); font-family: 'Noto Sans KR', sans-serif;
+      font-size: 0.83rem; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,0.06); }
+    .adv-section { margin-top: 14px; }
+
     /* ── MOBILE ── */
     @media (max-width: 500px) {
-      .preset-grid { grid-template-columns: 1fr; }
-      .qprev { grid-template-columns: 1fr; }
+      .speed-grid { grid-template-columns: 1fr; gap: 8px; }
+      .res5 { grid-template-columns: repeat(5,1fr); gap: 5px; }
+      .res-btn { font-size: 0.75rem; padding: 9px 2px; }
+      .qprev4 { grid-template-columns: 1fr 1fr; }
       .result-compare { grid-template-columns: 1fr auto 1fr; }
       .rc-val { font-size: 1.1rem; }
       .hdr { padding: 28px 0 24px; }
       .drop-zone { padding: 36px 16px; }
     }
-
-    /* Scrollbar */
-    .prog-log::-webkit-scrollbar { width: 4px; }
-    .prog-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -334,7 +344,7 @@
     <div class="badge">🔒 파일이 외부로 전송되지 않습니다</div>
   </div>
 
-  <!-- ═══ IN-APP BROWSER WARNING (카카오톡 등) ═══ -->
+  <!-- ═══ IN-APP BROWSER (카카오톡 등) ═══ -->
   <div id="inappWarning" class="card hidden fade-in">
     <div class="inapp-notice">
       🚫 <strong>카카오톡 내장 브라우저에서는 동영상 압축이 동작하지 않습니다.</strong><br>
@@ -345,11 +355,11 @@
     </button>
   </div>
 
-  <!-- ═══ COMPAT WARNING (SharedArrayBuffer 없음) ═══ -->
+  <!-- ═══ COMPAT WARNING ═══ -->
   <div id="compatWarning" class="card hidden fade-in">
     <div class="compat-alert">
-      ⚠️ <strong>주의:</strong> 이 기능은 <strong>HTTPS 환경의 Chrome 또는 Edge 브라우저</strong>에서 작동합니다.
-      iPhone 사파리는 지원되지 않으며, Android 크롬 또는 PC 크롬을 사용해 주세요.
+      ⚠️ <strong>주의:</strong> HTTPS 환경의 <strong>Chrome 또는 Edge</strong>에서만 동작합니다.
+      iPhone Safari는 미지원 — Android 크롬 또는 PC 크롬을 사용해 주세요.
     </div>
   </div>
 
@@ -366,21 +376,21 @@
       </button>
       <div class="drop-fmts">지원 형식: MP4 · MOV · AVI · MKV · WEBM</div>
     </div>
-    <input type="file" id="fileInput" accept="video/*">
+    <input type="file" id="fileInput" accept="video/*" multiple>
 
     <div id="fileInfoBox" class="hidden">
       <div class="file-info">
         <div class="file-thumb">🎞️</div>
         <div class="file-dets">
-          <div class="fname" id="fname">파일명</div>
+          <div class="fname" id="fname">선택된 파일: 0개</div>
           <div class="fmeta">
-            <span>📦 <b id="fsize">-</b></span>
-            <span>⏱️ <b id="fduration">-</b></span>
+            <span>📦 총 용량: <b id="fsize">-</b></span>
+            <span>⏱️ 자동 병합 대기: <b id="fduration">-</b></span>
             <span>📐 <b id="fresolution">-</b></span>
           </div>
         </div>
         <button class="btn btn-secondary" onclick="resetAll()" style="padding:8px 12px;font-size:0.8rem;flex-shrink:0">
-          ✕ 취소
+          ✕ 전체 취소
         </button>
       </div>
     </div>
@@ -390,87 +400,126 @@
   <div class="card hidden fade-in" id="settingsCard">
     <div class="card-title">⚙️ 압축 설정</div>
 
-    <div class="tabs">
-      <button class="tab on" id="tabA" onclick="switchTab('preset')">🎚️ 간편 설정</button>
-      <button class="tab" id="tabB" onclick="switchTab('custom')">🎯 목표 용량 지정</button>
+    <!-- ① 압축 속도 -->
+    <div class="sec-label">⚡ 압축 속도 선택</div>
+    <div class="speed-grid">
+      <button class="speed-btn" id="sbUltra" onclick="pickSpeed('ultrafast')">
+        <span class="si">🚀</span>
+        <span class="sn">초고속</span>
+        <span class="sd">ultrafast<br>속도 최우선</span>
+      </button>
+      <button class="speed-btn on-fast" id="sbFast" onclick="pickSpeed('fast')">
+        <span class="si">⚡</span>
+        <span class="sn">빠름 (권장)</span>
+        <span class="sd">fast<br>속도/화질 균형</span>
+      </button>
+      <button class="speed-btn" id="sbMed" onclick="pickSpeed('medium')">
+        <span class="si">💎</span>
+        <span class="sn">고화질</span>
+        <span class="sd">medium<br>화질 최우선</span>
+      </button>
     </div>
 
-    <!-- ── Preset Tab ── -->
-    <div id="tabPreset">
-      <div class="preset-grid">
-        <button class="preset-btn" id="pbHigh" onclick="pickPreset('high')">
-          <span class="pi">💎</span>
-          <span class="pn">고화질</span>
-          <span class="pd">용량 적게 감소<br>화질 거의 원본</span>
-        </button>
-        <button class="preset-btn on" id="pbMed" onclick="pickPreset('medium')">
-          <span class="pi">⚖️</span>
-          <span class="pn">균형 (권장)</span>
-          <span class="pd">적절한 압축<br>화질/용량 균형</span>
-        </button>
-        <button class="preset-btn" id="pbLow" onclick="pickPreset('low')">
-          <span class="pi">🗜️</span>
-          <span class="pn">최대 압축</span>
-          <span class="pd">용량 크게 감소<br>화질 저하 있음</span>
-        </button>
-      </div>
+    <div class="divider"></div>
+
+    <!-- ② 출력 해상도 -->
+    <div class="sec-label">📐 출력 해상도 <span style="color:var(--txt3);font-size:0.72rem;font-weight:400;text-transform:none;letter-spacing:0">(해상도를 낮추면 속도도 빨라짐)</span></div>
+    <div class="res5">
+      <button class="res-btn on" id="rAuto" onclick="pickRes('auto')">
+        원본
+        <span class="res-badge">그대로</span>
+        <span class="res-size" id="sizeAuto">—</span>
+      </button>
+      <button class="res-btn" id="r1080" onclick="pickRes('1080')">
+        1080p
+        <span class="res-badge">Full HD</span>
+        <span class="res-size" id="size1080">—</span>
+      </button>
+      <button class="res-btn" id="r720" onclick="pickRes('720')">
+        720p
+        <span class="res-badge">HD</span>
+        <span class="res-size" id="size720">—</span>
+      </button>
+      <button class="res-btn" id="r480" onclick="pickRes('480')">
+        480p
+        <span class="res-badge">SD</span>
+        <span class="res-size" id="size480">—</span>
+      </button>
+      <button class="res-btn" id="r360" onclick="pickRes('360')">
+        360p
+        <span class="res-badge">저화질</span>
+        <span class="res-size" id="size360">—</span>
+      </button>
     </div>
 
-    <!-- ── Custom Tab ── -->
-    <div id="tabCustom" class="hidden">
-      <p style="color:var(--txt2);font-size:0.88rem;margin-bottom:14px;">원하는 최종 파일 용량을 직접 입력하세요</p>
+    <div class="divider"></div>
+
+    <!-- ③ 고급: 특정 용량으로 강제 압축 -->
+    <button class="adv-toggle" id="advToggle" onclick="toggleAdvanced()">
+      <span>⚙️ 고급: 특정 용량으로 강제 압축하기</span>
+      <span id="advArrow">▼</span>
+    </button>
+    <div id="advSection" class="hidden adv-section">
+      <p style="color:var(--txt2);font-size:0.82rem;margin-bottom:10px;">원하는 에 미치는 MB를 입력하면 비트레이트를 조절합니다. <strong>해상도를 줄이는 것이 더 효과적입니다.</strong></p>
       <div class="size-row">
-        <input type="number" id="targetMB" placeholder="50" min="1" max="50000" oninput="onSizeInput()">
+        <input type="number" id="targetMB" placeholder="예: 50" min="1" max="50000" oninput="onSizeInput()">
         <span class="unit">MB</span>
       </div>
       <div class="chips">
-        <button class="chip" onclick="setMB(5)">5 MB</button>
+        <button class="chip" onclick="clearTarget()">자동</button>
         <button class="chip" onclick="setMB(10)">10 MB</button>
         <button class="chip" onclick="setMB(30)">30 MB</button>
         <button class="chip" onclick="setMB(50)">50 MB</button>
         <button class="chip" onclick="setMB(100)">100 MB</button>
-        <button class="chip" onclick="setMB(300)">300 MB</button>
+        <button class="chip" onclick="setMB(200)">200 MB</button>
         <button class="chip" onclick="setMB(500)">500 MB</button>
       </div>
       <div id="sizeAlert"></div>
-
-      <div class="divider"></div>
-      <div class="sec-label">📺 최대 해상도 제한 (선택)</div>
-      <div class="res-grid">
-        <button class="res-btn on" id="rAuto" onclick="pickRes('auto')">🔄 원본 그대로</button>
-        <button class="res-btn" id="r1080" onclick="pickRes('1080')">📺 최대 1080p</button>
-        <button class="res-btn" id="r720"  onclick="pickRes('720')">📱 최대 720p</button>
-        <button class="res-btn" id="r480"  onclick="pickRes('480')">📷 최대 480p</button>
-      </div>
     </div>
 
-    <!-- ── Quality Preview ── -->
-    <div class="divider"></div>
+    <!-- ④ 예상 결과 -->
     <div class="sec-label">📊 압축 후 예상 결과</div>
-
-    <div class="qprev">
+    <div class="qprev4">
       <div class="qitem">
         <div class="qlabel">예상 출력 용량</div>
         <div class="qval" id="estSize">—</div>
         <div class="qsub" id="estSizeSub" style="color:var(--txt2)">—</div>
       </div>
       <div class="qitem">
-        <div class="qlabel">예상 해상도 / 화질</div>
+        <div class="qlabel">예상 해상도</div>
         <div class="qval" id="estRes">—</div>
         <div class="qsub" id="estResSub" style="color:var(--txt2)">—</div>
       </div>
+      <div class="qitem">
+        <div class="qlabel">⏱ 예상 처리 시간</div>
+        <div class="qval" id="estTime">—</div>
+        <div class="qsub" id="estTimeSub" style="color:var(--txt2)">기기 성능에 따라 다름</div>
+      </div>
+      <div class="qitem">
+        <div class="qlabel">화질 수준</div>
+        <div class="qval" id="estQual">—</div>
+        <div class="qsub" id="estQualSub" style="color:var(--txt2)">—</div>
+      </div>
     </div>
 
-    <div class="qbar-wrap">
-      <div class="qbar-head">
-        <span>예상 화질 수준</span>
-        <span id="qualScore">—</span>
+    <!-- 속도 ↔ 화질 바 -->
+    <div class="sq-bar-wrap">
+      <div class="sq-labels">
+        <span>🎨 화질</span>
+        <span>⚡ 속도</span>
       </div>
-      <div class="qbar"><div class="qbar-fill" id="qfill" style="width:0%"></div></div>
+      <div class="sq-track">
+        <div class="sq-fill-q" id="sqFillQ" style="width:0%;background:linear-gradient(90deg,#3dd68c,#2ae8aa)"></div>
+        <div class="sq-fill-s" id="sqFillS" style="width:0%;background:linear-gradient(90deg,#f06292,#7c6ff7)"></div>
+      </div>
+      <div class="sq-sublabels">
+        <span id="sqLabelQ" style="color:var(--green)">—</span>
+        <span id="sqLabelS" style="color:var(--accent2)">—</span>
+      </div>
     </div>
 
     <div class="mt-16">
-      <button class="btn btn-primary btn-full" id="compressBtn" onclick="startCompress()">
+      <button class="btn btn-primary btn-full" onclick="startCompress()">
         🚀 압축 시작
       </button>
     </div>
@@ -525,8 +574,10 @@
       <span class="savings-desc" id="savingsDesc">—</span>
     </div>
 
-    <button class="btn btn-green btn-full" onclick="doDownload()">
-      ⬇️ 압축 파일 다운로드
+    <div id="resultListContainer" style="margin-top:16px; margin-bottom:16px;"></div>
+
+    <button class="btn btn-green btn-full" onclick="downloadAllFiles()">
+      ⬇️ 변환된 파일 모두 다운받기
     </button>
     <div class="flex gap-10 mt-12">
       <button class="btn btn-secondary" style="flex:1" onclick="resetAll()">🔄 새 파일 압축하기</button>
@@ -541,221 +592,286 @@
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════════
 const { createFFmpeg, fetchFile } = FFmpeg;
 
+// ═══ STATE ═══
 let ff = null;
-let inFile = null;
-let meta = { w: 0, h: 0, dur: 0 };
-let preset = 'medium';
+let fileQueue = []; 
+let currFileIdx = -1;
+let speedMode = 'fast';
 let resLimit = 'auto';
-let activeTab = 'preset';
-let outData = null;
-let outName = '';
 let cancelled = false;
 
-// ═══════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════
+// ═══ INIT ═══
 window.addEventListener('DOMContentLoaded', () => {
-  // 카카오톡 / 네이버 / 인스타 등 인앱 브라우저 감지
   const ua = navigator.userAgent || '';
   const isInApp = /KAKAOTALK|NAVER|Line\/|Instagram|FBAV|FB_IAB|Twitter|Snapchat|TikTok|DaumApps|everytime/i.test(ua);
 
   if (isInApp) {
-    // 인앱 브라우저: Chrome으로 열기 안내
     id('inappWarning').classList.remove('hidden');
     id('uploadCard').classList.add('hidden');
   } else if (typeof SharedArrayBuffer === 'undefined') {
-    // SharedArrayBuffer 미지원 브라우저
     id('compatWarning').classList.remove('hidden');
   }
-
   setupDrop();
 });
 
-function openInChrome() {
-  const url = location.href;
-  // Android Chrome Intent
-  const intentUrl = 'intent://' + url.replace(/^https?:\/\//, '') +
-    '#Intent;scheme=' + (url.startsWith('https') ? 'https' : 'http') +
-    ';package=com.android.chrome;end';
-  location.href = intentUrl;
-  // fallback: open in new window (일부 기기)
-  setTimeout(() => { window.open(url, '_blank'); }, 1500);
-}
-
 function id(x) { return document.getElementById(x); }
 
+function openInChrome() {
+  const url = location.href;
+  location.href = 'intent://' + url.replace(/^https?:\/\//, '') +
+    '#Intent;scheme=' + (url.startsWith('https') ? 'https' : 'http') +
+    ';package=com.android.chrome;end';
+  setTimeout(() => window.open(url, '_blank'), 1500);
+}
+
+// ═══ DROP ZONE ═══
 function setupDrop() {
   const zone = id('dropZone');
   const inp  = id('fileInput');
-
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
     e.preventDefault(); zone.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('video/')) loadFile(f);
+    loadFiles(e.dataTransfer.files);
   });
-  inp.addEventListener('change', () => { if (inp.files[0]) loadFile(inp.files[0]); });
+  inp.addEventListener('change', () => { loadFiles(inp.files); });
 }
 
-// ═══════════════════════════════════════════════════════════
-//  FILE LOAD
-// ═══════════════════════════════════════════════════════════
-function loadFile(file) {
-  inFile = file;
-  id('fname').textContent = file.name;
-  id('fsize').textContent = fmtBytes(file.size);
+// ═══ FILE LOAD ═══
+function loadFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const filtered = Array.from(fileList).filter(f => f.type.startsWith('video/'));
+  if (filtered.length === 0) return;
+  
+  fileQueue = filtered.map(f => ({
+    file: f,
+    meta: { w:0, h:0, dur:0 },
+    origMB: f.size / 1048576,
+    outData: null,
+    outName: f.name.replace(/\.[^.]+$/, '') + '_compressed.mp4'
+  }));
+
+  id('fname').textContent = `선택된 파일: ${fileQueue.length}개`;
+  const totMB = fileQueue.reduce((acc, o) => acc + o.origMB, 0);
+  id('fsize').textContent = fmtBytes(totMB * 1048576);
+  id('fresolution').textContent = '—';
   showEl('fileInfoBox');
 
-  const v = document.createElement('video');
-  v.preload = 'metadata';
-  v.onloadedmetadata = () => {
-    meta.w   = v.videoWidth;
-    meta.h   = v.videoHeight;
-    meta.dur = v.duration;
-    id('fduration').textContent  = fmtDur(v.duration);
-    id('fresolution').textContent = `${v.videoWidth}×${v.videoHeight}`;
-    URL.revokeObjectURL(v.src);
-    showEl('settingsCard');
-    updatePreview();
-  };
-  v.onerror = () => { showEl('settingsCard'); updatePreview(); };
-  v.src = URL.createObjectURL(file);
+  let loaded = 0;
+  fileQueue.forEach(obj => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      obj.meta.w = v.videoWidth; obj.meta.h = v.videoHeight; obj.meta.dur = v.duration;
+      URL.revokeObjectURL(v.src);
+      checkDone();
+    };
+    v.onerror = () => checkDone();
+    v.src = URL.createObjectURL(obj.file);
+  });
+
+  function checkDone() {
+    loaded++;
+    if (loaded === fileQueue.length) {
+      const totDur = fileQueue.reduce((acc, o) => acc + o.meta.dur, 0);
+      id('fduration').textContent = fmtDur(totDur);
+      showEl('settingsCard');
+      updateResButtons();
+      updatePreview();
+    }
+  }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  TAB / PRESET / RES
-// ═══════════════════════════════════════════════════════════
-function switchTab(t) {
-  activeTab = t;
-  id('tabA').classList.toggle('on', t === 'preset');
-  id('tabB').classList.toggle('on', t === 'custom');
-  id('tabPreset').classList.toggle('hidden', t !== 'preset');
-  id('tabCustom').classList.toggle('hidden', t !== 'custom');
-  updatePreview();
-}
-
-function pickPreset(p) {
-  preset = p;
-  ['High','Med','Low'].forEach(k => id('pb'+k).classList.remove('on'));
-  id('pb' + { high:'High', medium:'Med', low:'Low' }[p]).classList.add('on');
+// ═══ SETTINGS ═══
+function pickSpeed(mode) {
+  speedMode = mode;
+  ['sbUltra','sbFast','sbMed'].forEach(k => id(k).className = 'speed-btn');
+  const classMap = { ultrafast:'on-ultra', fast:'on-fast', medium:'on-med' };
+  id({ ultrafast:'sbUltra', fast:'sbFast', medium:'sbMed' }[mode]).classList.add(classMap[mode]);
+  updateResButtons();
   updatePreview();
 }
 
 function pickRes(r) {
   resLimit = r;
-  ['Auto','1080','720','480'].forEach(k => id('r'+k).classList.remove('on'));
+  ['Auto','1080','720','480','360'].forEach(k => id('r'+k).classList.remove('on'));
   id('r' + r.charAt(0).toUpperCase() + r.slice(1)).classList.add('on');
   updatePreview();
 }
 
-function setMB(n) { id('targetMB').value = n; onSizeInput(); }
+function setMB(n)     { id('targetMB').value = n; updatePreview(); }
+function clearTarget() { id('targetMB').value = ''; id('sizeAlert').innerHTML = ''; updatePreview(); }
 function onSizeInput() { updatePreview(); }
 
-// ═══════════════════════════════════════════════════════════
-//  QUALITY PREVIEW
-// ═══════════════════════════════════════════════════════════
-function updatePreview() {
-  if (!inFile) return;
-  const origMB = inFile.size / 1048576;
-  let estMB, qualPct;
+function toggleAdvanced() {
+  const sec = id('advSection');
+  const arr = id('advArrow');
+  const open = sec.classList.toggle('hidden');
+  arr.textContent = open ? '\u25bc' : '\u25b2';
+}
 
-  if (activeTab === 'preset') {
-    const cfg = { high:[0.65,82], medium:[0.40,62], low:[0.20,32] }[preset];
-    estMB    = origMB * cfg[0];
-    qualPct  = cfg[1];
-    id('sizeAlert').innerHTML = '';
-  } else {
-    const val = parseFloat(id('targetMB').value);
-    if (!val || val <= 0) { clearPreview(); return; }
-    estMB   = val;
-    const r = val / origMB;
-    qualPct = Math.min(100, Math.max(4, Math.round(r * 100 * 0.9)));
+// ═══ SIZE ESTIMATION PER RESOLUTION ═══
+function estimateSizeForRes(origMB, origH, origW, targetH) {
+  const crfRatio = { ultrafast: 0.62, fast: 0.48, medium: 0.35 }[speedMode];
+  if (targetH === 'auto') {
+    return origMB * crfRatio;
+  }
+  const lim = parseInt(targetH);
+  if (origH <= lim) {
+    return origMB * crfRatio;
+  }
+  const outH = lim;
+  const outW = Math.round(origW * (lim / origH));
+  const pixRatio = (outH * outW) / (origH * origW);
+  return origMB * crfRatio * Math.pow(pixRatio, 0.65);
+}
 
-    const al = id('sizeAlert');
-    if (val >= origMB) {
-      al.innerHTML = '<div class="inline-alert ia-warn">⚠️ 목표 용량이 원본 이상입니다. 압축 효과가 없을 수 있습니다.</div>';
-    } else if (r < 0.04) {
-      al.innerHTML = '<div class="inline-alert ia-danger">⛔ 목표 용량이 너무 작습니다. 이 크기로는 압축이 불가능할 수 있습니다.</div>';
+function updateResButtons() {
+  if (fileQueue.length === 0) return;
+  const totOrigMB = fileQueue.reduce((acc, o) => acc + o.origMB, 0);
+
+  const specs = [
+    { id: 'sizeAuto', res: 'auto' },
+    { id: 'size1080', res: '1080' },
+    { id: 'size720',  res: '720'  },
+    { id: 'size480',  res: '480'  },
+    { id: 'size360',  res: '360'  },
+  ];
+
+  specs.forEach(({ id: elId, res }) => {
+    const el = id(elId);
+    let totEstMB = 0;
+    
+    fileQueue.forEach(o => {
+      const origH = o.meta.h || 1080;
+      const origW = o.meta.w || 1920;
+      totEstMB += estimateSizeForRes(o.origMB, origH, origW, res);
+    });
+    
+    let allSmaller = true;
+    if (res !== 'auto') {
+      const lim = parseInt(res);
+      fileQueue.forEach(o => { if ((o.meta.h || 1080) > lim) allSmaller = false; });
     } else {
-      al.innerHTML = '';
+      allSmaller = false;
     }
-  }
 
-  const ratio = Math.round((estMB / origMB) * 100);
-  id('estSize').textContent    = estMB.toFixed(1) + ' MB';
-  id('estSizeSub').textContent = `원본의 약 ${ratio}%`;
+    if (allSmaller && res !== 'auto') {
+      el.textContent = '원본 유지';
+      el.className = 'res-size na';
+      return;
+    }
 
-  const { res, sub, color } = estResolution(qualPct);
-  id('estRes').textContent     = res;
-  id('estResSub').textContent  = sub;
-  id('estResSub').style.color  = color;
-
-  const fill = id('qfill');
-  fill.style.width = qualPct + '%';
-  fill.style.background =
-    qualPct >= 68 ? 'linear-gradient(90deg,#3dd68c,#2ae8aa)' :
-    qualPct >= 40 ? 'linear-gradient(90deg,#f5c842,#e67e22)' :
-                    'linear-gradient(90deg,#f4534e,#f06292)';
-
-  const labels = ['매우 낮음','낮음','보통','좋음','매우 좋음'];
-  id('qualScore').textContent = `${qualPct}점 (${labels[Math.min(4, Math.floor(qualPct/20))]})`;
+    el.textContent = fmtBytes(totEstMB * 1048576);
+    el.className = totEstMB < totOrigMB * 0.4 ? 'res-size' :
+                   totEstMB < totOrigMB * 0.7 ? 'res-size warn' : 'res-size na';
+  });
 }
 
-function estResolution(q) {
-  const ow = meta.w || 1920, oh = meta.h || 1080;
+// ═══ PREVIEW ═══
+function updatePreview() {
+  if (fileQueue.length === 0) return;
 
-  // If user forced a resolution limit in custom tab
-  if (activeTab === 'custom' && resLimit !== 'auto') {
-    const th = parseInt(resLimit);
-    if (oh <= th) return { res: `${ow}×${oh}`, sub: '원본 해상도 유지', color: 'var(--green)' };
-    const tw = Math.round(ow * (th / oh));
-    return { res: `${tw}×${th}`, sub: `${th}p로 축소`, color: 'var(--yellow)' };
-  }
+  let totOrigMB = 0;
+  let totEstMB = 0;
+  let totEstSec = 0;
+  
+  const targetMBVal = parseFloat(id('targetMB').value);
+  const al = id('sizeAlert');
+  if (targetMBVal && targetMBVal > 0) al.innerHTML = '<div class="inline-alert ia-warn">⚠️ 고급(목표 용량) 모드는 모든 파일에 강제 개별 적용됩니다 (배치 처리시 화질 들쭉날쭉할 수 있음)</div>';
+  else al.innerHTML = '';
+  
+  const crfSizeRatio = { ultrafast: 0.58, fast: 0.45, medium: 0.32 }[speedMode];
+  const presetFactor = { ultrafast: 0.35, fast: 0.9, medium: 2.2 }[speedMode];
+  
+  let avgQual = 0;
+  let avgSpeed = 0;
 
-  // Auto estimate
-  if (q >= 75) return { res:`${ow}×${oh}`, sub:'원본 해상도 유지', color:'var(--green)' };
-  if (q >= 55) {
-    const h=Math.min(oh,1080), w=Math.round(ow*(h/oh));
-    return { res:`${w}×${h}`, sub: h<oh?`${h}p로 축소`:'원본 유지', color:'var(--green)' };
-  }
-  if (q >= 35) {
-    const h=Math.min(oh,720), w=Math.round(ow*(h/oh));
-    return { res:`${w}×${h}`, sub: h<oh?`${h}p 축소 (화질 저하 있음)`:'원본 유지', color:'var(--yellow)' };
-  }
-  if (q >= 18) {
-    const h=Math.min(oh,480), w=Math.round(ow*(h/oh));
-    return { res:`${w}×${h}`, sub:`${h}p 축소 (화질 저하 큼)`, color:'#e67e22' };
-  }
-  const h=Math.min(oh,360), w=Math.round(ow*(h/oh));
-  return { res:`${w}×${h}`, sub:`${h}p 축소 (화질 많이 열화됨)`, color:'var(--red)' };
+  fileQueue.forEach(o => {
+    const origMB = o.origMB;
+    const dur = o.meta.dur || 60;
+    const origH = o.meta.h || 1080;
+    const origW = o.meta.w || 1920;
+    
+    totOrigMB += origMB;
+    
+    let outH, outW;
+    if (resLimit === 'auto') {
+      outH = origH; outW = origW;
+    } else {
+      const lim = parseInt(resLimit);
+      outH = Math.min(origH, lim);
+      outW = Math.round(origW * (outH / origH));
+    }
+    const pixRatio = (outH * outW) / (origH * origW);
+    
+    let estMB;
+    if (targetMBVal && targetMBVal > 0) estMB = targetMBVal;
+    else estMB = origMB * crfSizeRatio * Math.max(0.1, Math.sqrt(pixRatio));
+    
+    totEstMB += estMB;
+    totEstSec += dur * presetFactor * Math.max(0.05, pixRatio);
+    
+    const baseQual = { ultrafast: 62, fast: 75, medium: 88 }[speedMode];
+    avgQual += Math.max(5, Math.min(95, baseQual - Math.round((1 - pixRatio) * 25)));
+    
+    const speedScore = { ultrafast: 92, fast: 68, medium: 38 }[speedMode];
+    avgSpeed += Math.min(98, speedScore + Math.round((1 - pixRatio) * 20));
+  });
+
+  const n = fileQueue.length;
+  avgQual = Math.round(avgQual / n);
+  avgSpeed = Math.round(avgSpeed / n);
+
+  const ratio = Math.round((totEstMB / totOrigMB) * 100);
+  id('estSize').textContent    = totEstMB.toFixed(1) + ' MB';
+  id('estSizeSub').textContent = `합산 원본의 약 ${ratio}%`;
+  id('estSizeSub').style.color = ratio < 50 ? 'var(--green)' : ratio < 80 ? 'var(--yellow)' : 'var(--txt2)';
+
+  id('estRes').textContent    = (resLimit === 'auto') ? '원본 비례' : `${resLimit}p 이하`;
+  id('estResSub').textContent = '일괄 적용';
+  id('estResSub').style.color = 'var(--accent)';
+
+  id('estTime').textContent    = fmtDur(totEstSec);
+  id('estTimeSub').textContent = `총 파일 ${n}개 예상`;
+  id('estTime').style.color    = totEstSec < 60 ? 'var(--green)' : totEstSec < 180 ? 'var(--yellow)' : 'var(--orange)';
+
+  const qualLabels = ['매우 낮음','낮음','보통','좋음','매우 좋음'];
+  const qi = Math.min(4, Math.floor(avgQual / 20));
+  id('estQual').textContent    = avgQual + '점(평균)';
+  id('estQualSub').textContent = qualLabels[qi];
+  id('estQual').style.color    = avgQual >= 70 ? 'var(--green)' : avgQual >= 45 ? 'var(--yellow)' : 'var(--orange)';
+
+  const total = avgQual + avgSpeed;
+  const qPct  = Math.round((avgQual / total) * 100);
+  const sPct  = 100 - qPct;
+  id('sqFillQ').style.width = qPct + '%';
+  id('sqFillS').style.width = sPct + '%';
+  id('sqLabelQ').textContent = `화질 ${avgQual}점`;
+  id('sqLabelS').textContent = `속도 ${avgSpeed}점`;
 }
 
-function clearPreview() {
-  id('estSize').textContent = '—';
-  id('estSizeSub').textContent = '목표 용량을 입력하세요';
-  id('estRes').textContent  = '—';
-  id('estResSub').textContent  = '—';
-  id('qfill').style.width   = '0%';
-  id('qualScore').textContent  = '—';
-}
-
-// ═══════════════════════════════════════════════════════════
-//  COMPRESSION
-// ═══════════════════════════════════════════════════════════
+// ═══ COMPRESSION ═══
 async function startCompress() {
-  if (!inFile) return;
-  cancelled = false;
+  if (fileQueue.length === 0) return;
 
+  if (!self.crossOriginIsolated) {
+    if ('serviceWorker' in navigator) {
+      const ok = confirm('⏳ 브라우저 보안 초기화가 아직 완료되지 않았습니다.\n페이지를 새로고침하면 자동으로 해결됩니다.\n\n지금 새로고침 하시겠습니까?');
+      if (ok) window.location.reload();
+    } else {
+      alert('⛔ 이 브라우저는 동영상 압축을 지원하지 않습니다.\nChrome 또는 Edge 브라우저를 사용해 주세요.');
+    }
+    return;
+  }
+
+  cancelled = false;
   hideEl('settingsCard');
   showEl('progressCard');
   setProgress(0, 'FFmpeg 초기화 중...');
-  appendLog('압축 준비 중...');
+  id('progLog').textContent = '일괄 변환 준비 중...';
 
   try {
     if (!ff) {
@@ -766,47 +882,52 @@ async function startCompress() {
         progress: ({ ratio }) => {
           if (cancelled) return;
           const p = Math.min(99, Math.round(ratio * 100));
-          setProgress(p, `압축 중... ${p}%`);
+          setProgress(p, `[${currFileIdx + 1}/${fileQueue.length}] 진행 중... ${p}%`);
         }
       });
     }
 
     if (!ff.isLoaded()) {
       setProgress(2, 'FFmpeg 다운로드 중... (처음 한 번만)');
-      appendLog('FFmpeg 코어 로딩 중...');
+      appendLog('FFmpeg 코어 다운로드...');
       await ff.load();
-      appendLog('FFmpeg 로드 완료');
     }
 
-    if (cancelled) { resetProgress(); return; }
-    setProgress(5, '파일 읽는 중...');
-    appendLog(`파일 읽기: ${inFile.name}`);
+    // 파일 큐 순회
+    for (let i = 0; i < fileQueue.length; i++) {
+      if (cancelled) break;
+      currFileIdx = i;
+      const o = fileQueue[i];
+      const ext = (o.file.name.split('.').pop() || 'mp4').toLowerCase();
+      const inName = `input_${i}.${ext}`;
+      const outN = o.outName;
 
-    const ext    = (inFile.name.split('.').pop() || 'mp4').toLowerCase();
-    const inName = `input.${ext}`;
-    ff.FS('writeFile', inName, await fetchFile(inFile));
-    appendLog('입력 파일 준비 완료');
+      setProgress(5, `[${i + 1}/${fileQueue.length}] 파일 읽는 중...`);
+      ff.FS('writeFile', inName, await fetchFile(o.file));
 
-    if (cancelled) { cleanup(inName); return; }
+      if (cancelled) { cleanup(inName, outN); break; }
 
-    outName = buildOutName(inFile.name);
-    const args = buildArgs(inName);
-    if (!args) { hideEl('progressCard'); showEl('settingsCard'); return; }
+      const args = buildArgs(inName, outN, o.meta);
+      setProgress(10, `[${i + 1}/${fileQueue.length}] 압축 시작...`);
+      await ff.run(...args);
 
-    appendLog('FFmpeg 실행: ffmpeg ' + args.join(' '));
-    setProgress(10, '압축 시작...');
+      if (cancelled) { cleanup(inName, outN); break; }
 
-    await ff.run(...args);
+      setProgress(96, `[${i + 1}/${fileQueue.length}] 결과 처리 중...`);
+      const data = ff.FS('readFile', outN);
+      o.outData = data;
+      cleanup(inName, outN);
+      
+      appendLog(`완료 → ${outN} (${fmtBytes(data.byteLength)})`);
+      
+      // 완료 로그만 기록하고 다운로드는 마지막에 수동으로 진행합니다.
+      // autoDownload(o.outData, o.outName);
+    }
 
-    if (cancelled) { cleanup(inName); return; }
-
-    setProgress(96, '결과 파일 처리 중...');
-    outData = ff.FS('readFile', outName);
-    cleanup(inName);
-    appendLog(`출력 완료 → ${outName} (${fmtBytes(outData.byteLength)})`);
-
-    setProgress(100, '완료!');
-    setTimeout(showResult, 600);
+    if (!cancelled) {
+      setProgress(100, '모든 일괄 작업 완료!');
+      setTimeout(showResult, 800);
+    }
 
   } catch (err) {
     if (!cancelled) {
@@ -819,63 +940,60 @@ async function startCompress() {
   }
 }
 
-function buildArgs(inName) {
-  const args = ['-i', inName];
+function buildArgs(inName, outN, metaData) {
+  const args    = ['-i', inName];
+  const preset  = speedMode;   
+  const targetMBVal = parseFloat(id('targetMB').value);
 
-  if (activeTab === 'preset') {
-    const crfMap = { high: '23', medium: '28', low: '35' };
-    const scaleMap = { high: null, medium: 1080, low: 720 };
-    const crf   = crfMap[preset];
-    const limit = scaleMap[preset];
-
-    args.push('-c:v', 'libx264', '-crf', crf, '-preset', 'fast');
-    if (limit && meta.h > limit) args.push('-vf', `scale=-2:${limit}`);
-
+  if (targetMBVal && targetMBVal > 0) {
+    const dur  = metaData.dur || 60;
+    const totK = Math.floor((targetMBVal * 8192) / dur);
+    const vidK = Math.max(60, totK - 128);
+    args.push('-c:v', 'libx264', '-b:v', `${vidK}k`, '-preset', preset,
+              '-maxrate', `${vidK * 2}k`, '-bufsize', `${vidK * 4}k`);
+    appendLog(`목표 용량: ${targetMBVal}MB → 비트레이트 ${vidK}kbps`);
   } else {
-    const mb  = parseFloat(id('targetMB').value);
-    if (!mb || mb <= 0) { alert('목표 용량을 입력해주세요.'); return null; }
-    const dur  = meta.dur || 60;
-    const totK = Math.floor((mb * 8192) / dur);   // total kbps
-    const vidK = Math.max(80, totK - 128);          // subtract audio 128k
-
-    args.push('-c:v', 'libx264', '-b:v', `${vidK}k`, '-preset', 'fast',
-              '-maxrate', `${vidK*2}k`, '-bufsize', `${vidK*4}k`);
-
-    // Resolution
-    let limit = null;
-    if (resLimit !== 'auto') {
-      limit = parseInt(resLimit);
-    } else {
-      if (vidK < 400  && meta.h > 480)  limit = 480;
-      else if (vidK < 1200 && meta.h > 720)  limit = 720;
-      else if (vidK < 3500 && meta.h > 1080) limit = 1080;
-    }
-    if (limit && meta.h > limit) args.push('-vf', `scale=-2:${limit}`);
+    const crfMap = { ultrafast: '26', fast: '24', medium: '22' };
+    args.push('-c:v', 'libx264', '-crf', crfMap[preset], '-preset', preset);
   }
 
-  args.push('-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', outName);
+  let limit = null;
+  if (resLimit !== 'auto') {
+    limit = parseInt(resLimit);
+    if ((metaData.h || 1080) > 0 && (metaData.h || 1080) <= limit) limit = null;
+  }
+  if (limit) {
+    args.push('-vf', `scale=-2:${limit}`);
+    appendLog(`해상도 축소: ${limit}p`);
+  }
+
+  args.push('-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', outN);
   return args;
 }
 
-function buildOutName(original) {
-  return original.replace(/\.[^.]+$/, '') + '_compressed.mp4';
+function cleanup(inName, outN) {
+  try { ff.FS('unlink', inName); } catch(e) {}
+  try { ff.FS('unlink', outN); } catch(e) {}
 }
 
-function cleanup(inName) {
-  try { ff.FS('unlink', inName); } catch(e) {}
-  try { ff.FS('unlink', outName); } catch(e) {}
+function autoDownload(data, name) {
+  if (!data) return;
+  const blob = new Blob([data.buffer], { type: 'video/mp4' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); 
+  a.href = url; a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 function cancelCompress() {
-  cancelled = true;
-  ff = null;  // force reload next time
-  hideEl('progressCard');
-  showEl('settingsCard');
-  setProgress(0, '');
-  id('progLog').textContent = '취소됨.';
+  cancelled = true; ff = null;
+  hideEl('progressCard'); showEl('settingsCard');
+  resetProgress();
 }
 
-// ─── Progress Helpers ───
 const CIRCUM = 376.99;
 function setProgress(pct, step) {
   id('pcFill').style.strokeDashoffset = CIRCUM - (pct / 100) * CIRCUM;
@@ -883,82 +1001,91 @@ function setProgress(pct, step) {
   id('progStep').textContent = step;
 }
 function appendLog(msg) {
-  const logEl = id('progLog');
-  logEl.textContent += '\n' + msg;
-  logEl.scrollTop = logEl.scrollHeight;
+  const el = id('progLog');
+  el.textContent += '\n' + msg;
+  el.scrollTop = el.scrollHeight;
 }
-function resetProgress() {
-  setProgress(0, '');
-  id('progLog').textContent = '';
-}
+function resetProgress() { setProgress(0, ''); id('progLog').textContent = ''; }
 
-// ═══════════════════════════════════════════════════════════
-//  RESULT
-// ═══════════════════════════════════════════════════════════
+// ═══ RESULT ═══
 function showResult() {
   hideEl('progressCard');
   showEl('resultCard');
+  
+  let totOrig = 0;
+  let totComp = 0;
+  let html = '';
 
-  const origMB = inFile.size / 1048576;
-  const compMB = outData.byteLength / 1048576;
-  const savedMB  = origMB - compMB;
-  const savedPct = Math.round((savedMB / origMB) * 100);
+  fileQueue.forEach((o, idx) => {
+    totOrig += o.origMB * 1048576;
+    if (o.outData) {
+      const compS = o.outData.byteLength;
+      totComp += compS;
+      html += `
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <div style="min-width:0;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${o.file.name}</div>
+            <div style="font-size:0.7rem; color:var(--txt3);">${fmtBytes(o.origMB * 1048576)} → <span style="color:var(--green)">${fmtBytes(compS)}</span></div>
+          </div>
+          <button class="btn btn-secondary" style="padding:6px 10px; font-size:0.75rem; margin-left:10px; flex-shrink:0;" 
+             onclick="autoDownload(fileQueue[${idx}].outData, '${o.outName.replace(/'/g, "\\'")}')">
+             ⬇️ 개별 다운
+          </button>
+        </div>
+      `;
+    }
+  });
 
-  id('rcOrigSize').textContent = fmtBytes(inFile.size);
-  id('rcOrigRes').textContent  = meta.w ? `${meta.w}×${meta.h}` : '—';
-  id('rcCompSize').textContent = fmtBytes(outData.byteLength);
-  id('rcCompRes').textContent  = 'MP4 (H.264)';
+  document.getElementById('resultListContainer').innerHTML = html;
 
+  id('rcOrigSize').textContent = fmtBytes(totOrig);
+  id('rcOrigRes').textContent  = `총 ${fileQueue.length}개 파일`;
+  id('rcCompSize').textContent = fmtBytes(totComp);
+  id('rcCompRes').textContent  = 'MP4 일괄 완료';
+
+  const savedMB = (totOrig - totComp) / 1048576;
   if (savedMB > 0) {
-    id('savingsBig').textContent  = `${savedPct}% 절약`;
+    const p = Math.round((savedMB / (totOrig / 1048576)) * 100);
+    id('savingsBig').textContent  = `합산 ${p}% 절약`;
     id('savingsBig').style.color  = 'var(--green)';
-    id('savingsDesc').textContent = `${fmtBytes(inFile.size - outData.byteLength)} 절약 · ${fmtBytes(inFile.size)} → ${fmtBytes(outData.byteLength)}`;
+    id('savingsDesc').textContent = `총 ${fmtBytes(totOrig - totComp)} 감소 !`;
   } else {
-    id('savingsBig').textContent  = '압축 완료';
+    id('savingsBig').textContent  = '일괄 압축 완료';
     id('savingsBig').style.color  = 'var(--yellow)';
-    id('savingsDesc').textContent = `최종 크기: ${fmtBytes(outData.byteLength)}`;
+    id('savingsDesc').textContent = `총 크기: ${fmtBytes(totComp)}`;
   }
 }
 
-function doDownload() {
-  if (!outData) return;
-  const blob = new Blob([outData.buffer], { type: 'video/mp4' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = outName; a.click();
-  URL.revokeObjectURL(url);
+function downloadAllFiles() {
+  let delay = 0;
+  fileQueue.forEach(o => {
+    if (o.outData) {
+      setTimeout(() => {
+        autoDownload(o.outData, o.outName);
+      }, delay);
+      delay += 800; // 0.8초 간격으로 순차 다운로드 트리거 (브라우저 차단 방지)
+    }
+  });
 }
 
-function goBackToSettings() {
-  outData = null;
-  hideEl('resultCard');
-  showEl('settingsCard');
+function goBackToSettings() { 
+  fileQueue.forEach(o => o.outData = null);
+  hideEl('resultCard'); showEl('settingsCard'); 
 }
 
-// ═══════════════════════════════════════════════════════════
-//  RESET
-// ═══════════════════════════════════════════════════════════
 function resetAll() {
-  inFile = null; outData = null; meta = {w:0,h:0,dur:0};
-  preset = 'medium'; resLimit = 'auto'; activeTab = 'preset';
-  cancelled = false; outName = '';
-
+  fileQueue = []; currFileIdx = -1;
+  speedMode = 'fast'; resLimit = 'auto'; cancelled = false;
   id('fileInput').value = '';
-  hideEl('fileInfoBox'); hideEl('settingsCard');
-  hideEl('progressCard'); hideEl('resultCard');
-
-  pickPreset('medium');
-  switchTab('preset');
-  pickRes('auto');
+  hideEl('fileInfoBox'); hideEl('settingsCard'); hideEl('progressCard'); hideEl('resultCard');
+  id('resultListContainer').innerHTML = '';
+  pickSpeed('fast'); pickRes('auto');
   id('targetMB').value = '';
   id('sizeAlert').innerHTML = '';
-  clearPreview();
   resetProgress();
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════
+// ═══ UTILS ═══
 function fmtBytes(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
@@ -966,8 +1093,8 @@ function fmtBytes(b) {
   return (b/1073741824).toFixed(2) + ' GB';
 }
 function fmtDur(s) {
-  if (!s || isNaN(s)) return '—';
-  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60);
+  if (!s || isNaN(s) || s <= 0) return '—';
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.ceil(s%60);
   if (h) return `${h}시간 ${m}분 ${sec}초`;
   if (m) return `${m}분 ${sec}초`;
   return `${sec}초`;
