@@ -875,8 +875,9 @@ async function startCompress() {
 
   try {
     if (!ff) {
+      const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
       ff = createFFmpeg({
-        corePath: './ffmpeg-core.js',
+        corePath: isLocal ? './ffmpeg-core.js' : 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
         log: true,
         logger: ({ message }) => appendLog(message),
         progress: ({ ratio }) => {
